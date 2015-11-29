@@ -25,7 +25,11 @@ main = do
   numList <- someRandInts 2 digits
 
   startTime <- getClockTime
-  putStrLn $ sumProblemText (head numList) (numList !! 1) digits
+  let a = head numList
+  let b = numList !! 1
+  putStrLn $ sumProblemText a b digits
+  answer <- getLine
+  print (a + b == read answer)
   endTime <- getClockTime
 
   putStr "Time taken: "
