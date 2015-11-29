@@ -5,10 +5,6 @@ Main function.
 import System.Random
 import System.Time
 
--- Produces a random integer with d digits.
-randDigits :: Int -> IO Int
-randDigits d = getStdRandom $ randomR (10^(d-1), (10^d)-1)
-
 -- Produces an infinite list of integers with d digits.
 randIntList :: Int -> IO [Int]
 randIntList d = getStdGen >>= return . randomRs (10^(d-1), (10^d)-1)
