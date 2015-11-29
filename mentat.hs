@@ -13,12 +13,19 @@ randIntList d = getStdGen >>= return . randomRs (10^(d-1), (10^d)-1)
 someRandInts :: Int -> Int -> IO [Int]
 someRandInts n d = fmap (take n) (randIntList d)
 
+-- Creates the text of a sum problem.
+sumProblemText :: Int -> Int -> Int -> String
+sumProblemText a b d = "  " ++ (show a) ++
+                     "\n+ " ++ (show b) ++
+                     "\n==" ++ (replicate d '=')
+
 main :: IO ()
 main = do
-  numList <- someRandInts 100000 3
+  let digits = 3
+  numList <- someRandInts 2 digits
 
   startTime <- getClockTime
-  print numList
+  putStrLn $ sumProblemText (head numList) (numList !! 1) digits
   endTime <- getClockTime
 
   putStr "Time taken: "
