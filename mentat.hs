@@ -3,6 +3,7 @@ Main function.
 -}
 
 import System.Random
+import System.Time
 
 -- Produces a random integer with d digits.
 randDigits :: Int -> IO Int
@@ -18,5 +19,11 @@ someRandInts n d = fmap (take n) (randIntList d)
 
 main :: IO ()
 main = do
-  numList <- someRandInts 10 3
+  numList <- someRandInts 100000 3
+
+  startTime <- getClockTime
   print numList
+  endTime <- getClockTime
+
+  putStr "Time taken: "
+  putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
