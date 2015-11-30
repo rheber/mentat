@@ -2,8 +2,14 @@
 Main function.
 -}
 
+import System.Console.GetOpt
+import System.Environment
 import System.Random
 import System.Time
+
+data Flag =
+  Version
+  deriving Show
 
 -- Produces an infinite list of integers with d digits.
 randInts :: Int -> IO [Int]
@@ -23,6 +29,22 @@ randIntsTakePairs n d = do
 -- Counts how many items in a list are true.
 trueCount :: [Bool] -> Int
 trueCount = length . filter id
+
+options :: [OptDescr Flag]
+options =
+  [Option "v" ["version"] (NoArg Version) "show version number"]
+
+runGetOpt :: [String] -> IO ([Flag], [String])
+runGetOpt args =
+  case getOpt Permute options args of
+    (o,n,[])   -> return (o,n)
+    (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
+      where header = "Options:"
+
+flagCase :: Flag -> IO ()
+flagCase f =
+  case f of
+    Version -> print "mentat v0.1"
 
 -- Creates the text of a sum problem.
 sumProblemText :: Int -> Int -> Int -> String
@@ -49,6 +71,10 @@ main :: IO ()
 main = do
   let digits = 3
   let reps = 5
+
+  args <- getArgs
+  (flags, value) <- runGetOpt args
+  sequence $ map flagCase flags
 
   startTime <- getClockTime
   results <- sumProblems reps digits
