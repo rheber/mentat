@@ -2,13 +2,14 @@
 Main function.
 -}
 
+import Data.Maybe
 import System.Console.GetOpt
 import System.Environment
 import System.Random
 import System.Time
 
 data Flag =
-  Version
+  Digits String | Version
   deriving Show
 
 -- Produces an infinite list of integers with d digits.
@@ -32,8 +33,13 @@ trueCount = length . filter id
 
 options :: [OptDescr Flag]
 options =
-  [Option "v" ["version"] (NoArg Version) "show version number"]
+  [Option "d" ["digits"]  (OptArg dig "D") "generate D digit problems",
+   Option "v" ["version"] (NoArg Version)  "show version number"]
 
+dig :: Maybe String -> Flag
+dig = Digits . fromMaybe "3"
+
+-- Simply parses the options.
 runGetOpt :: [String] -> IO ([Flag], [String])
 runGetOpt args =
   case getOpt Permute options args of
@@ -41,10 +47,24 @@ runGetOpt args =
     (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
       where header = "Options:"
 
-flagCase :: Flag -> IO ()
-flagCase f =
-  case f of
-    Version -> print "mentat v0.1"
+versionOrPlay :: [Flag] -> IO ()
+versionOrPlay [] = play
+versionOrPlay (Version:xs) = print "mentat v0.1"
+versionOrPlay (x:xs) = versionOrPlay xs
+
+play :: IO ()
+play = do
+  let digits = 3
+  let reps = 5
+
+  startTime <- getClockTime
+  results <- sumProblems reps digits
+  endTime <- getClockTime
+
+  putStr "Correct answers: "
+  putStrLn $ (show $ trueCount results) ++ "/" ++ (show reps)
+  putStr "Time taken: "
+  putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
 
 -- Creates the text of a sum problem.
 sumProblemText :: Int -> Int -> Int -> String
@@ -69,18 +89,6 @@ sumProblems r d = do
 
 main :: IO ()
 main = do
-  let digits = 3
-  let reps = 5
-
   args <- getArgs
   (flags, value) <- runGetOpt args
-  sequence $ map flagCase flags
-
-  startTime <- getClockTime
-  results <- sumProblems reps digits
-  endTime <- getClockTime
-
-  putStr "Correct answers: "
-  putStrLn $ (show $ trueCount results) ++ "/" ++ (show reps)
-  putStr "Time taken: "
-  putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
+  versionOrPlay flags
