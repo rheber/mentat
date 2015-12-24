@@ -5,12 +5,20 @@ Main function.
 import Data.Maybe
 import System.Console.GetOpt
 import System.Environment
+import System.Exit
 import System.Random
 import System.Time
 
-data Flag =
-  Digits String | Version
-  deriving Show
+data Options = Options {
+  optDigits :: Int,
+  optReps   :: Int
+}
+
+defaultOptions :: Options
+defaultOptions = Options {
+  optDigits = 3,
+  optReps   = 5
+}
 
 -- Produces an infinite list of integers with d digits.
 randInts :: Int -> IO [Int]
@@ -31,32 +39,34 @@ randIntsTakePairs n d = do
 trueCount :: [Bool] -> Int
 trueCount = length . filter id
 
-options :: [OptDescr Flag]
+options :: [OptDescr (Options -> IO Options)]
 options =
-  [Option "d" ["digits"]  (OptArg dig "D") "generate D digit problems",
-   Option "v" ["version"] (NoArg Version)  "show version number"]
+  [Option "d" ["digits"]  (ReqArg digAction "D")
+       "generate D digit problems, default 3",
+   Option "r" ["reps"]    (ReqArg repAction "R")
+       "generate R problems, default 5",
+   Option "v" ["version"] (NoArg showVersion) "show version number"]
 
-dig :: Maybe String -> Flag
-dig = Digits . fromMaybe "3"
+showVersion _ = do
+  putStrLn "mentat v0.1"
+  exitWith ExitSuccess
+
+digAction :: String -> Options -> IO Options
+digAction arg opt = return opt {optDigits = read arg}
+
+repAction :: String -> Options -> IO Options
+repAction arg opt = return opt {optReps = read arg}
 
 -- Simply parses the options.
-runGetOpt :: [String] -> IO ([Flag], [String])
+runGetOpt :: [String] -> IO ([Options -> IO Options], [String])
 runGetOpt args =
   case getOpt Permute options args of
     (o,n,[])   -> return (o,n)
     (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
       where header = "Options:"
 
-versionOrPlay :: [Flag] -> IO ()
-versionOrPlay [] = play
-versionOrPlay (Version:xs) = print "mentat v0.1"
-versionOrPlay (x:xs) = versionOrPlay xs
-
-play :: IO ()
-play = do
-  let digits = 3
-  let reps = 5
-
+play :: Int -> Int -> IO ()
+play digits reps = do
   startTime <- getClockTime
   results <- sumProblems reps digits
   endTime <- getClockTime
@@ -90,5 +100,7 @@ sumProblems r d = do
 main :: IO ()
 main = do
   args <- getArgs
-  (flags, value) <- runGetOpt args
-  versionOrPlay flags
+  (actions, _) <- runGetOpt args
+  opts <- foldl (>>=) (return defaultOptions) actions
+  let Options { optDigits = digits, optReps = reps } = opts
+  play digits reps
