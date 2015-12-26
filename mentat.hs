@@ -2,6 +2,7 @@
 Main function.
 -}
 
+import Data.Char
 import Data.Maybe
 import System.Console.GetOpt
 import System.Environment
@@ -9,14 +10,31 @@ import System.Exit
 import System.Random
 import System.Time
 
+data Operation = Add | Mul | Sub
+
+str2op :: String -> Operation
+str2op t
+  | s == "mul" = Mul
+  | s == "sub" = Sub
+  | otherwise  = Add
+  where s = map toLower t
+
+op2func :: Operation -> (Int -> Int -> Int -> IO Bool)
+op2func op = case op of
+  Add -> addProblem
+  Mul -> mulProblem
+  Sub -> subProblem
+
 data Options = Options {
   optDigits :: Int,
+  optOp     :: Operation,
   optReps   :: Int
 }
 
 defaultOptions :: Options
 defaultOptions = Options {
   optDigits = 3,
+  optOp     = Add,
   optReps   = 5
 }
 
@@ -43,6 +61,8 @@ options :: [OptDescr (Options -> IO Options)]
 options =
   [Option "d" ["digits"]  (ReqArg digAction "D")
        "generate D digit problems, default 3",
+   Option "o" ["operation"] (ReqArg opAction "OP")
+       "the kind of problems to generate, one of: add (default), sub",
    Option "r" ["reps"]    (ReqArg repAction "R")
        "generate R problems, default 5",
    Option "v" ["version"] (NoArg showVersion) "show version number"]
@@ -53,6 +73,9 @@ showVersion _ = do
 
 digAction :: String -> Options -> IO Options
 digAction arg opt = return opt {optDigits = read arg}
+
+opAction :: String -> Options -> IO Options
+opAction arg opt = return opt {optOp = str2op arg}
 
 repAction :: String -> Options -> IO Options
 repAction arg opt = return opt {optReps = read arg}
@@ -65,10 +88,10 @@ runGetOpt args =
     (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
       where header = "Options:"
 
-play :: Int -> Int -> IO ()
-play digits reps = do
+play :: Int -> Operation -> Int -> IO ()
+play digits op reps = do
   startTime <- getClockTime
-  results <- sumProblems reps digits
+  results <- problems reps op digits
   endTime <- getClockTime
 
   putStr "Correct answers: "
@@ -76,25 +99,39 @@ play digits reps = do
   putStr "Time taken: "
   putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
 
--- Creates the text of a sum problem.
-sumProblemText :: Int -> Int -> Int -> String
-sumProblemText a b d = "  " ++ (show a) ++
-                     "\n+ " ++ (show b) ++
-                     "\n==" ++ (replicate d '=')
+-- Creates the text of a problem.
+problemText :: Int -> Int -> String -> Int -> String
+problemText a b c d = "  " ++ (show a) ++
+          "\n" ++ c ++ " " ++ (show b) ++
+                    "\n==" ++ (replicate d '=')
 
--- Prints a sum problem and examines an answer.
-sumProblem :: Int -> Int -> Int -> IO Bool
-sumProblem a b d = do
+-- Prints an add problem and examines an answer.
+addProblem :: Int -> Int -> Int -> IO Bool
+addProblem a b d = do
   putChar '\n'
-  putStrLn $ sumProblemText a b d
+  putStrLn $ problemText a b "+" d
   answer <- getLine
   return (a + b == read answer)
 
--- Asks r sum problems.
-sumProblems :: Int -> Int -> IO [Bool]
-sumProblems r d = do
+subProblem :: Int -> Int -> Int -> IO Bool
+subProblem a b d = do
+  putChar '\n'
+  putStrLn $ problemText (max a b) (min a b) "-" d
+  answer <- getLine
+  return ((abs $ a - b) == read answer)
+
+mulProblem :: Int -> Int -> Int -> IO Bool
+mulProblem a b d = do
+  putChar '\n'
+  putStrLn $ problemText a b "x" d
+  answer <- getLine
+  return (a * b == read answer)
+
+-- Asks r problems.
+problems :: Int -> Operation -> Int -> IO [Bool]
+problems r op d = do
   pairs <- randIntsTakePairs r d
-  let sp (a,b) = sumProblem a b d
+  let sp (a,b) = (op2func op) a b d
   sequence $ map sp pairs
 
 main :: IO ()
@@ -102,5 +139,5 @@ main = do
   args <- getArgs
   (actions, _) <- runGetOpt args
   opts <- foldl (>>=) (return defaultOptions) actions
-  let Options { optDigits = digits, optReps = reps } = opts
-  play digits reps
+  let Options { optDigits = digits, optOp = op, optReps = reps } = opts
+  play digits op reps
