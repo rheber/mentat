@@ -62,7 +62,7 @@ options =
   [Option "d" ["digits"]  (ReqArg digAction "D")
        "generate D digit problems, default 3",
    Option "o" ["operation"] (ReqArg opAction "OP")
-       "the kind of problems to generate, one of: add (default), sub",
+       "the kind of problems to generate, one of: add (default), sub, mul",
    Option "r" ["reps"]    (ReqArg repAction "R")
        "generate R problems, default 5",
    Option "v" ["version"] (NoArg showVersion) "show version number"]
