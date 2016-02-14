@@ -15,6 +15,6 @@ problems by default.
 
 `-d` The size of each problem in digits
 
-`-o` The type of each problem, currently one of: add, sub, mul
+`-o` The type of each problem, currently one of: add, sub, mul, square
 
 `-r` How many problems to generate

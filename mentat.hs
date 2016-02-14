@@ -10,11 +10,12 @@ import System.Exit
 import System.Random
 import System.Time
 
-data Operation = Add | Mul | Sub
+data Operation = Add | Mul | Square | Sub
 
 str2op :: String -> Operation
 str2op t
   | s == "mul" = Mul
+  | s == "square" = Square
   | s == "sub" = Sub
   | otherwise  = Add
   where s = map toLower t
@@ -23,6 +24,7 @@ op2func :: Operation -> (Int -> Int -> Int -> IO Bool)
 op2func op = case op of
   Add -> addProblem
   Mul -> mulProblem
+  Square -> squareProblem
   Sub -> subProblem
 
 data Options = Options {
@@ -126,6 +128,13 @@ mulProblem a b d = do
   putStrLn $ problemText a b "x" d
   answer <- getLine
   return (a * b == read answer)
+
+squareProblem :: Int -> Int -> Int -> IO Bool
+squareProblem a _ d = do
+  putChar '\n'
+  putStrLn $ problemText a a "x" d
+  answer <- getLine
+  return (a * a == read answer)
 
 -- Asks r problems.
 problems :: Int -> Operation -> Int -> IO [Bool]
