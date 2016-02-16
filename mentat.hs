@@ -28,30 +28,36 @@ op2func op = case op of
   Sub -> subProblem
 
 data Options = Options {
-  optDigits :: Int,
-  optOp     :: Operation,
-  optReps   :: Int
+  optLower :: Int,
+  optOp    :: Operation,
+  optReps  :: Int,
+  optUpper :: Int
 }
 
 defaultOptions :: Options
 defaultOptions = Options {
-  optDigits = 3,
-  optOp     = Add,
-  optReps   = 5
+  optLower = 100,
+  optOp    = Add,
+  optReps  = 5,
+  optUpper = 999
 }
 
--- Produces an infinite list of integers with d digits.
-randInts :: Int -> IO [Int]
-randInts d = getStdGen >>= return . randomRs (10^(d-1), (10^d)-1)
+-- Counts the amout of digits in an integer.
+digits :: Int -> Int
+digits n = ceiling $ logBase 10 $ 1 + fromIntegral n
 
--- Produces a list of n integers with d digits.
-randIntsTake :: Int -> Int -> IO [Int]
-randIntsTake n d = fmap (take n) (randInts d)
+-- Produces an infinite list of integers between lo and hi.
+randInts :: Int -> Int -> IO [Int]
+randInts lo hi = getStdGen >>= return . randomRs (lo, hi)
 
--- Produces a list of pairs of integers.
-randIntsTakePairs :: Int -> Int -> IO [(Int, Int)]
-randIntsTakePairs n d = do
-  aList <- randIntsTake (n * 2) d
+-- Produces a list of n integers between lo and hi.
+randIntsTake :: Int -> Int -> Int -> IO [Int]
+randIntsTake n lo hi = fmap (take n) (randInts lo hi)
+
+-- Produces a list of 2n pairs of integers between lo and hi.
+randIntsTakePairs :: Int -> Int -> Int -> IO [(Int, Int)]
+randIntsTakePairs n lo hi = do
+  aList <- randIntsTake (n * 2) lo hi
   let bList = drop n aList
   return $ zip aList bList
 
@@ -61,26 +67,31 @@ trueCount = length . filter id
 
 options :: [OptDescr (Options -> IO Options)]
 options =
-  [Option "d" ["digits"]  (ReqArg digAction "D")
-       "generate D digit problems, default 3",
+  [Option "l" ["lower"]  (ReqArg lowerAction "LO")
+       "minimum value of each operand, default 100",
    Option "o" ["operation"] (ReqArg opAction "OP")
        "the kind of problems to generate, one of: add (default), sub, mul",
    Option "r" ["reps"]    (ReqArg repAction "R")
        "generate R problems, default 5",
+   Option "u" ["upper"]  (ReqArg upperAction "HI")
+       "maximum value of each operand, default 999",
    Option "v" ["version"] (NoArg showVersion) "show version number"]
 
 showVersion _ = do
   putStrLn "mentat v0.1"
   exitWith ExitSuccess
 
-digAction :: String -> Options -> IO Options
-digAction arg opt = return opt {optDigits = read arg}
+lowerAction :: String -> Options -> IO Options
+lowerAction arg opt = return opt {optLower = read arg}
 
 opAction :: String -> Options -> IO Options
 opAction arg opt = return opt {optOp = str2op arg}
 
 repAction :: String -> Options -> IO Options
 repAction arg opt = return opt {optReps = read arg}
+
+upperAction :: String -> Options -> IO Options
+upperAction arg opt = return opt {optUpper = read arg}
 
 -- Simply parses the options.
 runGetOpt :: [String] -> IO ([Options -> IO Options], [String])
@@ -90,10 +101,10 @@ runGetOpt args =
     (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
       where header = "Options:"
 
-play :: Int -> Operation -> Int -> IO ()
-play digits op reps = do
+play :: Int -> Operation -> Int -> Int -> IO ()
+play lo op reps hi = do
   startTime <- getClockTime
-  results <- problems reps op digits
+  results <- problems reps op lo hi
   endTime <- getClockTime
 
   putStr "Correct answers: "
@@ -121,10 +132,10 @@ mulProblem a b d = arithmeticProblem a b d (*) "*"
 squareProblem a _ d = arithmeticProblem a a d (*) "*"
 
 -- Asks r problems.
-problems :: Int -> Operation -> Int -> IO [Bool]
-problems r op d = do
-  pairs <- randIntsTakePairs r d
-  let sp (a,b) = (op2func op) a b d
+problems :: Int -> Operation -> Int -> Int -> IO [Bool]
+problems r op lo hi = do
+  pairs <- randIntsTakePairs r lo hi
+  let sp (a,b) = (op2func op) a b $ digits hi
   sequence $ map sp pairs
 
 main :: IO ()
@@ -132,5 +143,8 @@ main = do
   args <- getArgs
   (actions, _) <- runGetOpt args
   opts <- foldl (>>=) (return defaultOptions) actions
-  let Options { optDigits = digits, optOp = op, optReps = reps } = opts
-  play digits op reps
+  let Options { optLower = lower,
+                optOp = op,
+                optReps = reps,
+                optUpper = upper } = opts
+  play lower op reps upper
