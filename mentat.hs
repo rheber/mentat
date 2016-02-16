@@ -107,34 +107,18 @@ problemText a b c d = "  " ++ (show a) ++
           "\n" ++ c ++ " " ++ (show b) ++
                     "\n==" ++ (replicate d '=')
 
--- Prints an add problem and examines an answer.
-addProblem :: Int -> Int -> Int -> IO Bool
-addProblem a b d = do
+-- Prints an arithmetic problem and examines the user's answer.
+arithmeticProblem :: Int -> Int -> Int -> (Int -> Int -> Int) -> String -> IO Bool
+arithmeticProblem a b d op opStr = do
   putChar '\n'
-  putStrLn $ problemText a b "+" d
+  putStrLn $ problemText (max a b) (min a b) opStr d
   answer <- getLine
-  return (a + b == read answer)
+  return ((abs $ a `op` b) == read answer)
 
-subProblem :: Int -> Int -> Int -> IO Bool
-subProblem a b d = do
-  putChar '\n'
-  putStrLn $ problemText (max a b) (min a b) "-" d
-  answer <- getLine
-  return ((abs $ a - b) == read answer)
-
-mulProblem :: Int -> Int -> Int -> IO Bool
-mulProblem a b d = do
-  putChar '\n'
-  putStrLn $ problemText a b "x" d
-  answer <- getLine
-  return (a * b == read answer)
-
-squareProblem :: Int -> Int -> Int -> IO Bool
-squareProblem a _ d = do
-  putChar '\n'
-  putStrLn $ problemText a a "x" d
-  answer <- getLine
-  return (a * a == read answer)
+addProblem a b d = arithmeticProblem a b d (+) "+"
+subProblem a b d = arithmeticProblem a b d (-) "-"
+mulProblem a b d = arithmeticProblem a b d (*) "*"
+squareProblem a _ d = arithmeticProblem a a d (*) "*"
 
 -- Asks r problems.
 problems :: Int -> Operation -> Int -> IO [Bool]
