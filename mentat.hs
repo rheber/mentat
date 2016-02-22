@@ -9,6 +9,7 @@ import System.Environment
 import System.Exit
 import System.Random
 import System.Time
+import Text.Read
 
 data Operation = Add | Mul | Square | Sub
 
@@ -118,13 +119,19 @@ problemText a b c d = "  " ++ (show a) ++
           "\n" ++ c ++ " " ++ (show b) ++
                     "\n==" ++ (replicate d '=')
 
+-- Parse string as int, defaulting to zero.
+readInt :: String -> Int
+readInt s = case readMaybe s of
+  Nothing -> 0
+  Just n  -> n
+
 -- Prints an arithmetic problem and examines the user's answer.
 arithmeticProblem :: Int -> Int -> Int -> (Int -> Int -> Int) -> String -> IO Bool
 arithmeticProblem a b d op opStr = do
   putChar '\n'
   putStrLn $ problemText (max a b) (min a b) opStr d
   answer <- getLine
-  return ((abs $ a `op` b) == read answer)
+  return ((abs $ a `op` b) == readInt answer)
 
 addProblem a b d = arithmeticProblem a b d (+) "+"
 subProblem a b d = arithmeticProblem a b d (-) "-"
