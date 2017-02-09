@@ -21,5 +21,3 @@ problems by default.
 
 `-u` The maximum value of each operand, 999 by default
 
-Funny things can happen if you specify your minimum higher than your maximum or
-vice versa.

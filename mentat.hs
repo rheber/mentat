@@ -113,11 +113,16 @@ play lo op reps hi = do
   putStr "Time taken: "
   putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
 
+-- Prepend spaces until string is at least n chars long.
+padString :: Int -> String -> String
+padString n = until (\x -> length x >= n) (' ':)
+
 -- Creates the text of a problem.
 problemText :: Int -> Int -> String -> Int -> String
-problemText a b c d = "  " ++ (show a) ++
-          "\n" ++ c ++ " " ++ (show b) ++
-                    "\n==" ++ (replicate d '=')
+problemText a b c d =
+  "  " ++ (padString d $ show a) ++
+  "\n" ++ c ++ " " ++ (padString d $ show b) ++
+  "\n==" ++ (replicate d '=')
 
 -- Parse string as int, defaulting to zero.
 readInt :: String -> Int
@@ -154,4 +159,8 @@ main = do
                 optOp = op,
                 optReps = reps,
                 optUpper = upper } = opts
-  play lower op reps upper
+  if upper < lower
+  then error "Upper bound less than lower bound"
+  else if lower < 0
+       then error "Negative lower bound"
+       else play lower op reps upper
