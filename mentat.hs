@@ -1,27 +1,8 @@
-{-
-Main function.
--}
+import System.Time (getClockTime, diffClockTimes, timeDiffToString)
+import Text.Read (readMaybe)
 
-import Data.Char
-import Data.Maybe
-import System.Console.GetOpt
-import System.Environment
-import System.Exit
-import System.Random
-import System.Time
-import Text.Read
-
-data Operation = Add | Mul | Square | Sub | TT
-  deriving Eq
-
-str2op :: String -> Operation
-str2op t
-  | s == "mul" = Mul
-  | s == "square" = Square
-  | s == "sub" = Sub
-  | s == "tt" = TT
-  | otherwise  = Add
-  where s = map toLower t
+import Getopt (Operation(..), Options(..), defaultOptions, parseArgs)
+import Random (randIntsTakePairs, randIntsTTPairs)
 
 op2func :: Operation -> (Int -> Int -> Int -> IO Bool)
 op2func op = case op of
@@ -30,85 +11,13 @@ op2func op = case op of
   Square -> squareProblem
   Sub -> subProblem
 
-data Options = Options {
-  optLower :: Int,
-  optOp    :: Operation,
-  optReps  :: Int,
-  optUpper :: Int
-}
-
-defaultOptions :: Options
-defaultOptions = Options {
-  optLower = 1,
-  optOp    = Add,
-  optReps  = 5,
-  optUpper = 999
-}
-
 -- Counts the amout of digits in an integer.
 digits :: Int -> Int
 digits n = ceiling $ logBase 10 $ 1 + fromIntegral n
 
--- Produces an infinite list of integers between lo and hi.
-randInts :: Int -> Int -> IO [Int]
-randInts lo hi = getStdGen >>= return . randomRs (lo, hi)
-
--- Produces a list of n integers between lo and hi.
-randIntsTake :: Int -> Int -> Int -> IO [Int]
-randIntsTake n lo hi = fmap (take n) (randInts lo hi)
-
--- Produces a list of 2n pairs of integers between lo and hi.
-randIntsTakePairs :: Int -> Int -> Int -> IO [(Int, Int)]
-randIntsTakePairs n lo hi = do
-  aList <- randIntsTake (n * 2) lo hi
-  let bList = drop n aList
-  return $ zip aList bList
-
--- Produces a list of 2n pairs of integers which each conatin hi.
-randIntsTTPairs :: Int -> Int -> Int -> IO [(Int, Int)]
-randIntsTTPairs n lo hi = do
-  rands <- randIntsTake n lo hi
-  return $ zip (repeat hi) rands
-
 -- Counts how many items in a list are true.
 trueCount :: [Bool] -> Int
 trueCount = length . filter id
-
-options :: [OptDescr (Options -> IO Options)]
-options =
-  [Option "l" ["lower"]  (ReqArg lowerAction "LO")
-       "minimum value of each operand, default 1",
-   Option "o" ["operation"] (ReqArg opAction "OP")
-       "the kind of problems to generate, one of: add (default), sub, mul, square, tt",
-   Option "r" ["reps"]    (ReqArg repAction "R")
-       "generate R problems, default 5",
-   Option "u" ["upper"]  (ReqArg upperAction "HI")
-       "maximum value of each operand, default 999",
-   Option "v" ["version"] (NoArg showVersion) "show version number"]
-
-showVersion _ = do
-  putStrLn "mentat v0.1"
-  exitWith ExitSuccess
-
-lowerAction :: String -> Options -> IO Options
-lowerAction arg opt = return opt {optLower = read arg}
-
-opAction :: String -> Options -> IO Options
-opAction arg opt = return opt {optOp = str2op arg}
-
-repAction :: String -> Options -> IO Options
-repAction arg opt = return opt {optReps = read arg}
-
-upperAction :: String -> Options -> IO Options
-upperAction arg opt = return opt {optUpper = read arg}
-
--- Simply parses the options.
-runGetOpt :: [String] -> IO ([Options -> IO Options], [String])
-runGetOpt args =
-  case getOpt Permute options args of
-    (o,n,[])   -> return (o,n)
-    (_,_,errs) -> ioError $ userError $ concat errs ++ usageInfo header options
-      where header = "Options:"
 
 play :: Int -> Operation -> Int -> Int -> IO ()
 play lo op reps hi = do
@@ -169,8 +78,7 @@ ttProblems r lo hi = do
 
 main :: IO ()
 main = do
-  args <- getArgs
-  (actions, _) <- runGetOpt args
+  actions <- parseArgs
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optLower = lower,
                 optOp = op,
