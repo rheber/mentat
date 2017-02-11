@@ -11,13 +11,15 @@ import System.Random
 import System.Time
 import Text.Read
 
-data Operation = Add | Mul | Square | Sub
+data Operation = Add | Mul | Square | Sub | TT
+  deriving Eq
 
 str2op :: String -> Operation
 str2op t
   | s == "mul" = Mul
   | s == "square" = Square
   | s == "sub" = Sub
+  | s == "tt" = TT
   | otherwise  = Add
   where s = map toLower t
 
@@ -37,7 +39,7 @@ data Options = Options {
 
 defaultOptions :: Options
 defaultOptions = Options {
-  optLower = 100,
+  optLower = 1,
   optOp    = Add,
   optReps  = 5,
   optUpper = 999
@@ -62,6 +64,12 @@ randIntsTakePairs n lo hi = do
   let bList = drop n aList
   return $ zip aList bList
 
+-- Produces a list of 2n pairs of integers which each conatin hi.
+randIntsTTPairs :: Int -> Int -> Int -> IO [(Int, Int)]
+randIntsTTPairs n lo hi = do
+  rands <- randIntsTake n lo hi
+  return $ zip (repeat hi) rands
+
 -- Counts how many items in a list are true.
 trueCount :: [Bool] -> Int
 trueCount = length . filter id
@@ -69,9 +77,9 @@ trueCount = length . filter id
 options :: [OptDescr (Options -> IO Options)]
 options =
   [Option "l" ["lower"]  (ReqArg lowerAction "LO")
-       "minimum value of each operand, default 100",
+       "minimum value of each operand, default 1",
    Option "o" ["operation"] (ReqArg opAction "OP")
-       "the kind of problems to generate, one of: add (default), sub, mul",
+       "the kind of problems to generate, one of: add (default), sub, mul, square, tt",
    Option "r" ["reps"]    (ReqArg repAction "R")
        "generate R problems, default 5",
    Option "u" ["upper"]  (ReqArg upperAction "HI")
@@ -105,7 +113,9 @@ runGetOpt args =
 play :: Int -> Operation -> Int -> Int -> IO ()
 play lo op reps hi = do
   startTime <- getClockTime
-  results <- problems reps op lo hi
+  results <- if op == TT
+             then ttProblems reps lo hi
+             else problems reps op lo hi
   endTime <- getClockTime
 
   putStr "Correct answers: "
@@ -149,6 +159,13 @@ problems r op lo hi = do
   pairs <- randIntsTakePairs r lo hi
   let sp (a,b) = (op2func op) a b $ digits hi
   sequence $ map sp pairs
+
+-- Ask r mul problems all involving hi.
+ttProblems :: Int -> Int -> Int -> IO [Bool]
+ttProblems r lo hi = do
+  pairs <- randIntsTTPairs r lo hi
+  let x (hi,b) = mulProblem hi b $ digits hi
+  sequence $ map x pairs
 
 main :: IO ()
 main = do
