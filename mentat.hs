@@ -27,7 +27,7 @@ play lo op reps hi = do
              else problems reps op lo hi
   endTime <- getClockTime
 
-  putStr "Correct answers: "
+  putStr "\nCorrect answers: "
   putStrLn $ (show $ trueCount results) ++ "/" ++ (show reps)
   putStr "Time taken: "
   putStrLn $ timeDiffToString $ diffClockTimes endTime startTime
@@ -55,7 +55,12 @@ arithmeticProblem a b d op opStr = do
   putChar '\n'
   putStrLn $ problemText (max a b) (min a b) opStr d
   answer <- getLine
-  return ((abs $ a `op` b) == readInt answer)
+  let trueAnswer = abs $ a `op` b
+  let isCorrect = trueAnswer == readInt answer
+  putStrLn $ if isCorrect
+             then "Correct!"
+             else "Incorrect: " ++ (show trueAnswer)
+  return isCorrect
 
 addProblem a b d = arithmeticProblem a b d (+) "+"
 subProblem a b d = arithmeticProblem a b d (-) "-"
