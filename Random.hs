@@ -16,9 +16,3 @@ randIntsTakePairs n lo hi = do
   aList <- randIntsTake (n * 2) lo hi
   let bList = drop n aList
   return $ zip aList bList
-
--- Produces a list of 2n pairs of integers which each conatin hi.
-randIntsTTPairs :: Int -> Int -> Int -> IO [(Int, Int)]
-randIntsTTPairs n lo hi = do
-  rands <- randIntsTake n lo hi
-  return $ zip (repeat hi) rands

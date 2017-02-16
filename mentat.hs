@@ -2,7 +2,7 @@ import System.Time (getClockTime, diffClockTimes, timeDiffToString)
 import Text.Read (readMaybe)
 
 import Getopt (Operation(..), Options(..), defaultOptions, parseArgs)
-import Random (randIntsTakePairs, randIntsTTPairs)
+import Random (randIntsTakePairs, randIntsTake)
 
 op2func :: Operation -> (Int -> Int -> Int -> IO Bool)
 op2func op = case op of
@@ -66,15 +66,15 @@ squareProblem a _ d = arithmeticProblem a a d (*) "*"
 problems :: Int -> Operation -> Int -> Int -> IO [Bool]
 problems r op lo hi = do
   pairs <- randIntsTakePairs r lo hi
-  let sp (a,b) = (op2func op) a b $ digits hi
-  sequence $ map sp pairs
+  let problem = \(a,b) -> (op2func op) a b $ digits hi
+  sequence $ problem <$> pairs
 
 -- Ask r mul problems all involving hi.
 ttProblems :: Int -> Int -> Int -> IO [Bool]
 ttProblems r lo hi = do
-  pairs <- randIntsTTPairs r lo hi
-  let x (hi,b) = mulProblem hi b $ digits hi
-  sequence $ map x pairs
+  rands <- randIntsTake r lo hi
+  let problem = \b -> mulProblem hi b $ digits hi
+  sequence $ problem <$> rands
 
 main :: IO ()
 main = do
