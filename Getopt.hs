@@ -8,19 +8,21 @@ import System.Exit (ExitCode(ExitSuccess), exitWith)
 data Operation = Add | Mul | Square | Sub | TT
   deriving Eq
 
-data Options = Options {
-  optLower :: Int,
-  optOp    :: Operation,
-  optReps  :: Int,
-  optUpper :: Int
+data Options =
+  Options {optLower  :: Int
+          ,optOp     :: Operation
+          ,optReps   :: Int
+          ,optNotens :: Bool
+          ,optUpper  :: Int
 }
 
 defaultOptions :: Options
-defaultOptions = Options {
-  optLower = 1,
-  optOp    = Add,
-  optReps  = 5,
-  optUpper = 999
+defaultOptions =
+  Options {optLower = 1
+  ,optOp            = Add
+  ,optReps          = 5
+  ,optNotens        = False
+  ,optUpper         = 999
 }
 
 str2op :: String -> Operation
@@ -45,6 +47,7 @@ options =
        "the kind of problems to generate, one of: add (default), sub, mul, square, tt",
    Option "r" ["reps"]    (ReqArg repAction "R")
        "generate R problems, default 5",
+   Option "t" ["notens"] (NoArg notensAction) "filter out powers of ten",
    Option "u" ["upper"]  (ReqArg upperAction "HI")
        "maximum value of each operand, default 999",
    Option "v" ["version"] (NoArg showVersion) "show version number"]
@@ -57,6 +60,9 @@ opAction arg opt = return opt {optOp = str2op arg}
 
 repAction :: String -> Options -> IO Options
 repAction arg opt = return opt {optReps = read arg}
+
+notensAction :: Options -> IO Options
+notensAction opt = return opt {optNotens = True}
 
 upperAction :: String -> Options -> IO Options
 upperAction arg opt = return opt {optUpper = read arg}
