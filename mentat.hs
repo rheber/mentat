@@ -2,7 +2,8 @@ import System.Time (getClockTime, diffClockTimes, timeDiffToString)
 import Text.Read (readMaybe)
 
 import Getopt (Operation(..), Options(..), defaultOptions, parseArgs)
-import Random (randIntsTakePairs, randIntsTake)
+import Random (digits,
+  randIntsTakePairs, randIntsTake, noTensTakePairs, noTensTake)
 
 op2func :: Operation -> (Int -> Int -> Int -> IO Bool)
 op2func op = case op of
@@ -11,20 +12,16 @@ op2func op = case op of
   Square -> squareProblem
   Sub -> subProblem
 
--- Counts the amout of digits in an integer.
-digits :: Int -> Int
-digits n = ceiling $ logBase 10 $ 1 + fromIntegral n
-
 -- Counts how many items in a list are true.
 trueCount :: [Bool] -> Int
 trueCount = length . filter id
 
-play :: Int -> Operation -> Int -> Int -> IO ()
-play lo op reps hi = do
+play :: Int -> Bool -> Operation -> Int -> Int -> IO ()
+play lo notens op reps hi = do
   startTime <- getClockTime
   results <- if op == TT
-             then ttProblems reps lo hi
-             else problems reps op lo hi
+             then ttProblems reps notens lo hi
+             else problems reps notens op lo hi
   endTime <- getClockTime
 
   putStr "\nCorrect answers: "
@@ -68,16 +65,16 @@ mulProblem a b d = arithmeticProblem a b d (*) "*"
 squareProblem a _ d = arithmeticProblem a a d (*) "*"
 
 -- Asks r problems.
-problems :: Int -> Operation -> Int -> Int -> IO [Bool]
-problems r op lo hi = do
-  pairs <- randIntsTakePairs r lo hi
+problems :: Int -> Bool -> Operation -> Int -> Int -> IO [Bool]
+problems r notens op lo hi = do
+  pairs <- (if notens then noTensTakePairs else randIntsTakePairs) r lo hi
   let problem = \(a,b) -> (op2func op) a b $ digits hi
   sequence $ problem <$> pairs
 
 -- Ask r mul problems all involving hi.
-ttProblems :: Int -> Int -> Int -> IO [Bool]
-ttProblems r lo hi = do
-  rands <- randIntsTake r lo hi
+ttProblems :: Int -> Bool -> Int -> Int -> IO [Bool]
+ttProblems r notens lo hi = do
+  rands <- (if notens then noTensTake else randIntsTake) r lo hi
   let problem = \b -> mulProblem hi b $ digits hi
   sequence $ problem <$> rands
 
@@ -86,6 +83,7 @@ main = do
   actions <- parseArgs
   opts <- foldl (>>=) (return defaultOptions) actions
   let Options { optLower = lower,
+                optNotens = notens,
                 optOp = op,
                 optReps = reps,
                 optUpper = upper } = opts
@@ -93,4 +91,4 @@ main = do
   then error "Upper bound less than lower bound"
   else if lower < 0
        then error "Negative lower bound"
-       else play lower op reps upper
+       else play lower notens op reps upper

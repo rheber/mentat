@@ -18,5 +18,7 @@ Running `mentat` without any flags will produce five addition problems by defaul
 
 `-r` How many problems to generate
 
+`-t` Filters out powers of 10 if specified, disabled by default
+
 `-u` The maximum value of each operand, 999 by default
 
